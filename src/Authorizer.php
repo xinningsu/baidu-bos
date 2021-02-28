@@ -4,8 +4,6 @@ namespace Sulao\BaiduBos;
 
 class Authorizer
 {
-    protected $config;
-
     const HEADERS_TO_SIGN = [
         'host',
         'content-length',
@@ -17,9 +15,14 @@ class Authorizer
 
     const EXPIRED_IN = 1800;
 
-    public function __construct(array $config)
+    protected $accessKey;
+
+    protected $secretKey;
+
+    public function __construct(string $accessKey, string $secretKey)
     {
-        $this->config = $config;
+        $this->accessKey = $accessKey;
+        $this->secretKey = $secretKey;
     }
 
     public function getAuthorization(
@@ -51,7 +54,7 @@ class Authorizer
         $authPrefix = $this->authPrefix(
             $options['expired_in'] ?? self::EXPIRED_IN
         );
-        $signingKey = hash_hmac('sha256', $authPrefix, $this->config['secret']);
+        $signingKey = hash_hmac('sha256', $authPrefix, $this->secretKey);
         $signature = hash_hmac('sha256', $canonicalRequest, $signingKey);
 
         return $authPrefix . '/' . $signedHeaders . '/' . $signature;
@@ -59,7 +62,7 @@ class Authorizer
 
     protected function authPrefix(int $expiredIn = self::EXPIRED_IN): string
     {
-        return 'bce-auth-v1/' . $this->config['key'] . '/'
+        return 'bce-auth-v1/' . $this->accessKey . '/'
             . gmdate('Y-m-d\TH:i:s\Z') . '/' . $expiredIn;
     }
 

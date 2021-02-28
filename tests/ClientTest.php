@@ -10,12 +10,23 @@ class ClientTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->client = new \Sulao\BaiduBos\Client([
-            'key' => getenv('BOS_KEY'),
-            'secret' => getenv('BOS_SECRET'),
-            'region' => 'gz',
-            'bucket' => 'xinningsu',
-        ]);
+        $this->client = new \Sulao\BaiduBos\Client(
+            getenv('BOS_KEY'),
+            getenv('BOS_SECRET'),
+            'xinningsu',
+            'gz'
+        );
+    }
+
+    public function testClient()
+    {
+        $this->assertEquals(getenv('BOS_KEY'), $this->client->getAccessKey());
+        $this->assertEquals(
+            getenv('BOS_SECRET'),
+            $this->client->getSecretKey()
+        );
+        $this->assertEquals('xinningsu', $this->client->getBucket());
+        $this->assertEquals('gz', $this->client->getRegion());
     }
 
     public function testBucket()
@@ -110,7 +121,7 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     protected function testObjectAcl()
     {
-        $this->client->putObjectAcl('/bos_test.txt', false);
+        $this->client->putObjectAcl('/bos_test.txt', 'public-read');
         $acl = $this->client->getObjectAcl('/bos_test.txt');
         $this->assertEquals(
             'READ',

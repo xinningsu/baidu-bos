@@ -10,13 +10,91 @@ class Client
 {
     const BOS_HOST = 'bcebos.com';
 
-    protected $config;
+    /**
+     * @var string
+     */
+    protected $accessKey;
+
+    /**
+     * @var string
+     */
+    protected $secretKey;
+
+    /**
+     * @var string
+     */
+    protected $bucket;
+
+    /**
+     * @var string
+     */
+    protected $region;
+
+    /**
+     * @var Authorizer
+     */
     protected $authorizer;
 
-    public function __construct(array $config)
+    /**
+     * Client constructor.
+     *
+     * @param string $accessKey
+     * @param string $secretKey
+     * @param string $bucket
+     * @param string $region
+     */
+    public function __construct(
+        string $accessKey,
+        string $secretKey,
+        string $bucket,
+        string $region
+    ) {
+        $this->accessKey = $accessKey;
+        $this->secretKey = $secretKey;
+        $this->bucket = $bucket;
+        $this->region = $region;
+
+        $this->authorizer = new Authorizer($this->accessKey, $this->secretKey);
+    }
+
+    /**
+     * Get access key
+     *
+     * @return string
+     */
+    public function getAccessKey()
     {
-        $this->config = $config;
-        $this->authorizer = new Authorizer($config);
+        return $this->accessKey;
+    }
+
+    /**
+     * Get secret key
+     *
+     * @return string
+     */
+    public function getSecretKey()
+    {
+        return $this->secretKey;
+    }
+
+    /**
+     * Get bucket
+     *
+     * @return string
+     */
+    public function getBucket()
+    {
+        return $this->bucket;
+    }
+
+    /**
+     * Get region
+     *
+     * @return string
+     */
+    public function getRegion()
+    {
+        return $this->region;
     }
 
     /**
@@ -85,7 +163,7 @@ class Client
         string $dest,
         array $options = []
     ): array {
-        $sourcePath = '/' . $this->config['bucket']
+        $sourcePath = '/' . $this->bucket
             . '/' . ltrim($source, '/');
         $options['headers']['x-bce-copy-source'] = $sourcePath;
         $options['return'] = 'json';
@@ -219,7 +297,7 @@ class Client
      * Update object ACL
      *
      * @param string $path
-     * @param bool   $private
+     * @param string $acl     private or public-read
      * @param array  $options
      *
      * @return array
@@ -227,10 +305,16 @@ class Client
      */
     public function putObjectAcl(
         string $path,
-        bool $private,
+        string $acl,
         array $options = []
     ): array {
-        $options['headers']['x-bce-acl'] = $private ? 'private' : 'public-read';
+        if (!in_array($acl, ['private', 'public-read'])) {
+            throw new Exception(
+                'Unsupported acl: ' . $acl . ', either private or public-read'
+            );
+        }
+
+        $options['headers']['x-bce-acl'] = $acl;
         $options['query']['acl'] = null;
         $options['return'] = 'headers';
 
@@ -385,8 +469,8 @@ class Client
     ): array {
         $keys = array_map('strtolower', array_keys($headers));
 
-        $headers['Host'] = $this->config['bucket'] . '.'
-            . $this->config['region'] . '.' . self::BOS_HOST;
+        $headers['Host'] = $this->bucket . '.' . $this->region
+            . '.' . self::BOS_HOST;
 
         if (!array_key_exists('date', $keys)) {
             $headers['Date'] = gmdate('D, d M Y H:i:s e');

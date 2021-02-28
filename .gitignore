@@ -3,4 +3,5 @@
 /.phpunit.cache
 /composer.lock
 /build
+/test.php
 /vendor
