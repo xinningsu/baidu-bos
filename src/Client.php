@@ -6,6 +6,11 @@ use GuzzleHttp;
 use GuzzleHttp\Exception\BadResponseException;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Class Client
+ *
+ * @package Sulao\BaiduBos
+ */
 class Client
 {
     const BOS_HOST = 'bcebos.com';
@@ -31,6 +36,11 @@ class Client
     protected $region;
 
     /**
+     * @var array
+     */
+    protected $options;
+
+    /**
      * @var Authorizer
      */
     protected $authorizer;
@@ -42,17 +52,22 @@ class Client
      * @param string $secretKey
      * @param string $bucket
      * @param string $region
+     * @param array  $options    Guzzle request options
      */
     public function __construct(
-        string $accessKey,
-        string $secretKey,
-        string $bucket,
-        string $region
+        $accessKey,
+        $secretKey,
+        $bucket,
+        $region,
+        array $options = []
     ) {
         $this->accessKey = $accessKey;
         $this->secretKey = $secretKey;
         $this->bucket = $bucket;
         $this->region = $region;
+        $this->options = $options + [
+            'connect_timeout' => 10,
+        ];
 
         $this->authorizer = new Authorizer($this->accessKey, $this->secretKey);
     }
@@ -106,7 +121,7 @@ class Client
      * @return string
      * @throws Exception
      */
-    public function getObject(string $path, array $options = []): string
+    public function getObject($path, array $options = [])
     {
         return $this->request('GET', $path, $options);
     }
@@ -120,7 +135,7 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function getObjectMeta(string $path, array $options = []): array
+    public function getObjectMeta($path, array $options = [])
     {
         $options['return'] = 'headers';
 
@@ -137,11 +152,8 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function putObject(
-        string $path,
-        string $content,
-        array $options = []
-    ): array {
+    public function putObject($path, $content, array $options = [])
+    {
         $options['body'] = $content;
         $options['return'] = 'headers';
 
@@ -158,13 +170,9 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function copyObject(
-        string $source,
-        string $dest,
-        array $options = []
-    ): array {
-        $sourcePath = '/' . $this->bucket
-            . '/' . ltrim($source, '/');
+    public function copyObject($source, $dest, array $options = [])
+    {
+        $sourcePath = '/' . $this->bucket . '/' . ltrim($source, '/');
         $options['headers']['x-bce-copy-source'] = $sourcePath;
         $options['return'] = 'json';
 
@@ -181,14 +189,11 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function fetchObject(
-        string $path,
-        string $source,
-        array $options = []
-    ): array {
+    public function fetchObject($path, $source, array $options = [])
+    {
         $options['query']['fetch'] = null;
         $options['headers']['x-bce-fetch-source'] = $source;
-        $options['return'] = 'json';
+        $options['return'] = 'body-json';
 
         return $this->request('POST', $path, $options);
     }
@@ -203,11 +208,8 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function renameObject(
-        string $path,
-        string $newPath,
-        array $options = []
-    ): array {
+    public function renameObject($path, $newPath, array $options = [])
+    {
         $result = $this->copyObject($path, $newPath, $options);
         $this->deleteObject($path);
 
@@ -224,11 +226,8 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function appendObject(
-        string $path,
-        string $content,
-        array $options = []
-    ): array {
+    public function appendObject($path, $content, array $options = [])
+    {
         $options['query']['append'] = null;
 
         $options['body'] = $content;
@@ -246,7 +245,7 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function deleteObject(string $path, array $options = []): array
+    public function deleteObject($path, array $options = [])
     {
         $options['return'] = 'headers';
 
@@ -263,7 +262,7 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function deleteObjects(array $paths, array $options = []): array
+    public function deleteObjects(array $paths, array $options = [])
     {
         $paths = array_map(function ($path) {
             return ['key' => ltrim($path, '/')];
@@ -285,10 +284,10 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function getObjectAcl(string $path, array $options = []): array
+    public function getObjectAcl($path, array $options = [])
     {
         $options['query'] = ['acl' => null];
-        $options['return'] = 'json';
+        $options['return'] = 'body-json';
 
         return $this->request('GET', $path, $options);
     }
@@ -303,11 +302,8 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function putObjectAcl(
-        string $path,
-        string $acl,
-        array $options = []
-    ): array {
+    public function putObjectAcl($path, $acl, array $options = [])
+    {
         if (!in_array($acl, ['private', 'public-read'])) {
             throw new Exception(
                 'Unsupported acl: ' . $acl . ', either private or public-read'
@@ -330,7 +326,7 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function deleteObjectAcl(string $path, array $options = []): array
+    public function deleteObjectAcl($path, array $options = [])
     {
         $options['query']['acl'] = null;
         $options['return'] = 'headers';
@@ -346,18 +342,17 @@ class Client
      * @return array
      * @throws Exception
      */
-    public function getBucketAcl(array $options = []): array
+    public function getBucketAcl(array $options = [])
     {
         $options['query']['acl'] = null;
-        $options['return'] = 'json';
+        $options['return'] = 'body-json';
 
         return $this->request('GET', '/', $options);
     }
 
-    public function listObjects(array $options = []): array
+    public function listObjects(array $options = [])
     {
-
-        $options['return'] = 'json';
+        $options['return'] = 'body-json';
 
         return $this->request('GET', '/', $options);
     }
@@ -372,14 +367,11 @@ class Client
      * @return array|mixed|string
      * @throws Exception
      */
-    protected function request(
-        string $method,
-        string $path,
-        array $options = []
-    ) {
-        $query = $options['query'] ?? [];
-        $headers = $options['headers'] ?? [];
-        $body = $options['body'] ?? null;
+    protected function request($method, $path, array $options = [])
+    {
+        $query = isset($options['query']) ? $options['query'] : [];
+        $headers = isset($options['headers']) ? $options['headers'] : [];
+        $body = isset($options['body']) ? $options['body'] : null;
         $path = '/' . ltrim($path, '/');
 
         $headers = $this->buildHeaders(
@@ -388,7 +380,7 @@ class Client
             $query,
             $headers,
             $body,
-            $options['authorization'] ?? []
+            isset($options['authorization']) ? $options['authorization'] : []
         );
 
         $endpoint = 'https://' . $headers['Host'] . $path;
@@ -396,7 +388,7 @@ class Client
             $endpoint .= '?' . $this->buildQuery($query);
         }
 
-        $httpClient = new GuzzleHttp\Client();
+        $httpClient = new GuzzleHttp\Client($this->options);
         $guzzleOptions = ['headers' => $headers];
 
         if (!is_null($body)) {
@@ -437,10 +429,10 @@ class Client
             );
         }
 
-        $return = $options['return'] ?? null;
+        $return = isset($options['return']) ? $options['return'] : null;
         if ($return === 'headers') {
             return $this->parseHeaders($response);
-        } elseif ($return === 'json') {
+        } elseif ($return === 'body-json') {
             return json_decode($response->getBody()->getContents(), true);
         }
 
@@ -460,13 +452,13 @@ class Client
      * @return array
      */
     protected function buildHeaders(
-        string $method,
-        string $path,
+        $method,
+        $path,
         array $query = [],
         array $headers = [],
-        ?string $body = null,
+        $body = null,
         array $options = []
-    ): array {
+    ) {
         $keys = array_map('strtolower', array_keys($headers));
 
         $headers['Host'] = $this->bucket . '.' . $this->region
@@ -499,7 +491,7 @@ class Client
      *
      * @return string
      */
-    protected function buildQuery(array $query): string
+    protected function buildQuery(array $query)
     {
         $arr = [];
         foreach ($query as $key => $value) {
@@ -517,7 +509,7 @@ class Client
      *
      * @return array
      */
-    protected function parseHeaders(ResponseInterface $response): array
+    protected function parseHeaders(ResponseInterface $response)
     {
         $headers = array();
         foreach ($response->getHeaders() as $name => $values) {

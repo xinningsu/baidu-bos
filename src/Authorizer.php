@@ -2,6 +2,11 @@
 
 namespace Sulao\BaiduBos;
 
+/**
+ * Class Authorizer
+ *
+ * @package Sulao\BaiduBos
+ */
 class Authorizer
 {
     const HEADERS_TO_SIGN = [
@@ -13,31 +18,55 @@ class Authorizer
 
     const BCE_HEADER_PREFIX = 'x-bce-';
 
-    const EXPIRED_IN = 1800;
+    /**
+     * @var int
+     */
+    protected $expiredIn = 1800;
 
+    /**
+     * @var string
+     */
     protected $accessKey;
 
+    /**
+     * @var string
+     */
     protected $secretKey;
 
-    public function __construct(string $accessKey, string $secretKey)
+    /**
+     * Authorizer constructor.
+     *
+     * @param string $accessKey
+     * @param string $secretKey
+     */
+    public function __construct($accessKey, $secretKey)
     {
         $this->accessKey = $accessKey;
         $this->secretKey = $secretKey;
     }
 
+    /**
+     * @param string $method
+     * @param string $path
+     * @param array  $query
+     * @param array  $headers
+     * @param array  $options
+     *
+     * @return string
+     */
     public function getAuthorization(
-        string $method,
-        string $path,
+        $method,
+        $path,
         array $query = [],
         array $headers = [],
         array $options = []
-    ): string {
+    ) {
         $canonicalURI = $this->getCanonicalURI($path);
         $canonicalQueryString = $this->getCanonicalQueryString($query);
 
         $headerToSign = $this->getHeadersToSign(
             $headers,
-            $options['sign_headers'] ?? [],
+            isset($options['sign_headers']) ? $options['sign_headers'] : [],
             $hasSignedHeader
         );
         $canonicalHeader = $this->getCanonicalHeaders($headerToSign);
@@ -51,33 +80,51 @@ class Authorizer
             ? $this->getSignedHeaders(array_keys($headerToSign))
             : '';
 
-        $authPrefix = $this->authPrefix(
-            $options['expired_in'] ?? self::EXPIRED_IN
-        );
+        $expiredIn = isset($options['expired_in'])
+            ? $options['expired_in']
+            : $this->expiredIn;
+        $authPrefix = $this->authPrefix($expiredIn);
         $signingKey = hash_hmac('sha256', $authPrefix, $this->secretKey);
         $signature = hash_hmac('sha256', $canonicalRequest, $signingKey);
 
         return $authPrefix . '/' . $signedHeaders . '/' . $signature;
     }
 
-    protected function authPrefix(int $expiredIn = self::EXPIRED_IN): string
+    /**
+     * @param int $expiredIn
+     *
+     * @return string
+     */
+    protected function authPrefix($expiredIn)
     {
         return 'bce-auth-v1/' . $this->accessKey . '/'
             . gmdate('Y-m-d\TH:i:s\Z') . '/' . $expiredIn;
     }
 
-    protected function getCanonicalURI(string $path): string
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function getCanonicalURI($path)
     {
         $path = '/' . ltrim($path, '/');
 
         return str_replace('%2F', '/', rawurlencode($path));
     }
 
+    /**
+     * @param array $headers
+     * @param array $signHeaders
+     * @param null  $hasSignedHeader
+     *
+     * @return array
+     */
     protected function getHeadersToSign(
         array $headers,
         array $signHeaders = [],
         &$hasSignedHeader = null
-    ): array {
+    ) {
         $signHeaders = array_map('strtolower', $signHeaders);
         $len = strlen(self::BCE_HEADER_PREFIX);
 
@@ -98,7 +145,12 @@ class Authorizer
         return $arr;
     }
 
-    protected function getCanonicalQueryString(array $query): string
+    /**
+     * @param array $query
+     *
+     * @return string
+     */
+    protected function getCanonicalQueryString(array $query)
     {
         $arr = array_map(function ($value, $key) {
             return rawurlencode($key) . '=' . rawurlencode($value);
@@ -108,8 +160,12 @@ class Authorizer
         return implode('&', $arr);
     }
 
-
-    protected function getCanonicalHeaders(array $headers): string
+    /**
+     * @param array $headers
+     *
+     * @return string
+     */
+    protected function getCanonicalHeaders(array $headers)
     {
         $arr = array_map(function ($value, $key) {
             return rawurlencode(strtolower(trim($key)))
@@ -120,7 +176,12 @@ class Authorizer
         return implode("\n", $arr);
     }
 
-    protected function getSignedHeaders(array $headers): string
+    /**
+     * @param array $headers
+     *
+     * @return string
+     */
+    protected function getSignedHeaders(array $headers)
     {
         $headers = array_map(function ($header) {
             return rawurlencode(strtolower(trim($header)));
