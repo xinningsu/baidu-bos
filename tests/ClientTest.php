@@ -13,7 +13,8 @@ class ClientTest extends \PHPUnit\Framework\TestCase
                 getenv('BOS_KEY'),
                 getenv('BOS_SECRET'),
                 'xinningsu',
-                'gz'
+                'gz',
+                ['connect_timeout' => 10]
             );
         }
 
@@ -45,12 +46,11 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         $this->putObject();
         $this->getObject();
         $this->copyObject();
-        $this->renameObject();
-        $this->deleteObject();
         $this->getObjectMeta();
         $this->objectAcl();
         $this->appendObject();
         $this->fetchObject();
+        $this->deleteObject();
         $this->listObjects();
         $this->deleteObjects();
     }
@@ -79,7 +79,11 @@ class ClientTest extends \PHPUnit\Framework\TestCase
             '/bos_test.txt',
             [
                 'headers' => ['Author' => 'Thomas'],
-                'authorization' => ['sign_headers' => ['Author']],
+                'authorize' => [
+                    'sign_headers' => ['Author'],
+                    'expired_in' => 1800
+                ],
+                'request' => ['connect_timeout' => 15]
             ]
         );
         $this->assertEquals('bos test', $content);
@@ -93,24 +97,6 @@ class ClientTest extends \PHPUnit\Framework\TestCase
             $content,
             $this->client()->getObject('/bos_test2.txt')
         );
-    }
-
-    protected function renameObject()
-    {
-        $content = $this->client()->getObject('/bos_test2.txt');
-
-        $this->client()->renameObject('/bos_test2.txt', '/bos_test3.txt');
-        $this->assertEquals(
-            $content,
-            $this->client()->getObject('/bos_test3.txt')
-        );
-
-        $exception  = null;
-        try {
-            $this->client()->getObjectAcl('/bos_test2.txt');
-        } catch (\Sulao\BaiduBos\Exception $exception) {
-        }
-        $this->assertEquals('NoSuchKey', $exception->bosCode);
     }
 
     protected function getObjectMeta()
@@ -138,6 +124,13 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         }
         $this->assertNotNull($exception);
         $this->assertEquals('ObjectAclNotExists', $exception->bosCode);
+
+        $exception  = null;
+        try {
+            $this->client()->putObjectAcl('/bos_test.txt', 'aaaaaa');
+        } catch (\Sulao\BaiduBos\Exception $exception) {
+        }
+        $this->assertNotNull($exception);
     }
 
     protected function appendObject()
@@ -160,10 +153,14 @@ class ClientTest extends \PHPUnit\Framework\TestCase
 
     protected function fetchObject()
     {
-        $this->client()->fetchObject('/bos_test2.txt', 'https://www.baidu.com');
-        $this->assertTrue(
-            is_array($this->client()->getObjectMeta('/bos_test2.txt'))
+        $this->client()->fetchObject('/bos_test3.txt', 'https://www.baidu.com');
+        $result = $this->client()->getObjectMeta(
+            '/bos_test3.txt',
+            ['return' => 'both']
         );
+        $this->assertTrue(is_array($result));
+        $this->assertArrayHasKey('headers', $result);
+        $this->assertArrayHasKey('body', $result);
     }
 
     protected function listObjects()
