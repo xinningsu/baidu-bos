@@ -30,7 +30,7 @@ $client = new \Sulao\BaiduBos\Client([
     'secret_key' => 'secret key',
     'bucket' => 'bucket',
     'region' => 'region',
-    'options' => ['connect_timeout' => 10] // guzzle request options
+    'options' => ['connect_timeout' => 10] // Optional, guzzle request options
 ]);
 
 // 添加或更新对象
@@ -69,6 +69,10 @@ $client->deleteObject('/object_name.txt');
 // 批量删除对象
 $client->deleteObjects(['/object_name.txt', '/object_name2.txt']);
 ```
+
+# 参考
+
+- [https://cloud.baidu.com/doc/BOS/index.html](https://cloud.baidu.com/doc/BOS/index.html)
 
 # License
 

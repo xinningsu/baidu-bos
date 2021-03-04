@@ -82,7 +82,7 @@ abstract class Request
             $response = $httpClient
                 ->request($method, $endpoint, $requestOptions);
         } catch (\Exception $exception) {
-            $this->handleRquestException($exception);
+            throw $this->handleRquestException($exception);
         }
 
         return $this->processReturn(
@@ -96,7 +96,7 @@ abstract class Request
      *
      * @param \Exception $exception
      *
-     * @throws Exception
+     * @return Exception
      */
     protected function handleRquestException(\Exception $exception)
     {
@@ -116,11 +116,11 @@ abstract class Request
                     $newException->requestId = $response['requestId'];
                 }
 
-                throw $newException;
+                return $newException;
             }
         }
 
-        throw new Exception(
+        return new Exception(
             $exception->getMessage(),
             $exception->getCode(),
             $exception
@@ -140,28 +140,29 @@ abstract class Request
     {
         $path = '/' . ltrim($path, '/');
 
-        $query = isset($options['query']) ? $options['query'] : [];
-        $headers = isset($options['headers']) ? $options['headers'] : [];
-        $body = isset($options['body']) ? $options['body'] : null;
-        $requestOptions = isset($options['request']) ? $options['request'] : [];
+        $options += [
+            'query' => [], 'headers' => [], 'body' => null,
+            'request' => [], 'authorize' => [],
+        ];
+        $requestOptions = $options['request'];
 
         $headers = $this->buildHeaders(
             $method,
             $path,
-            $query,
-            $headers,
-            $body,
-            isset($options['authorize']) ? $options['authorize'] : []
+            $options['query'],
+            $options['headers'],
+            $options['body'],
+            $options['authorize']
         );
         $requestOptions['headers'] = $headers;
 
-        if (!is_null($body)) {
-            $requestOptions['body'] = $body;
+        if (!is_null($options['body'])) {
+            $requestOptions['body'] = $options['body'];
         }
 
         $endpoint = 'https://' . $headers['Host'] . $path;
-        if (!empty($query)) {
-            $endpoint .= '?' . $this->buildQuery($query);
+        if (!empty($options['query'])) {
+            $endpoint .= '?' . $this->buildQuery($options['query']);
         }
 
         return [$endpoint, $requestOptions];
@@ -196,14 +197,12 @@ abstract class Request
             $headers['Date'] = gmdate('D, d M Y H:i:s e');
         }
 
+        $contentLength = strlen((string) $body);
         if (!array_key_exists('content-length', $keys)) {
-            $headers['Content-Length'] = isset($body) ? strlen($body) : 0;
+            $headers['Content-Length'] = $contentLength ;
         }
 
-        if (
-            !array_key_exists('content-md5', $keys)
-            && isset($body) && strlen($body)
-        ) {
+        if (!array_key_exists('content-md5', $keys) && $contentLength) {
             $headers['Content-MD5'] = base64_encode(md5($body, true));
         }
 
