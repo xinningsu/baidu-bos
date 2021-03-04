@@ -80,10 +80,10 @@ class Authorizer
             ? $this->getSignedHeaders(array_keys($headerToSign))
             : '';
 
-        $expiredIn = isset($options['expired_in'])
+        $expired = isset($options['expired_in'])
             ? $options['expired_in']
             : $this->expiredIn;
-        $authPrefix = $this->authPrefix($expiredIn);
+        $authPrefix = $this->authPrefix($expired);
         $signingKey = hash_hmac('sha256', $authPrefix, $this->secretKey);
         $signature = hash_hmac('sha256', $canonicalRequest, $signingKey);
 
@@ -114,9 +114,9 @@ class Authorizer
     }
 
     /**
-     * @param array $headers
-     * @param array $signHeaders
-     * @param null  $hasSignedHeader
+     * @param array     $headers
+     * @param array     $signHeaders
+     * @param bool|null $hasSignedHeader
      *
      * @return array
      */

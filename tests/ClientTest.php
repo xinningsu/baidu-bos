@@ -9,27 +9,39 @@ class ClientTest extends \PHPUnit\Framework\TestCase
         static $client;
 
         if (!$client) {
-            $client = new \Sulao\BaiduBos\Client(
-                getenv('BOS_KEY'),
-                getenv('BOS_SECRET'),
-                'xinningsu',
-                'gz',
-                ['connect_timeout' => 10]
-            );
+            $client = new \Sulao\BaiduBos\Client([
+                'access_key' => getenv('BOS_KEY'),
+                'secret_key' => getenv('BOS_SECRET'),
+                'bucket' => 'xinningsu',
+                'region' => 'gz',
+                'options' => ['connect_timeout' => 10]
+            ]);
         }
 
         return $client;
     }
 
-    public function testClient()
+    public function testGetConfig()
     {
-        $this->assertEquals(getenv('BOS_KEY'), $this->client()->getAccessKey());
-        $this->assertEquals(
-            getenv('BOS_SECRET'),
-            $this->client()->getSecretKey()
-        );
-        $this->assertEquals('xinningsu', $this->client()->getBucket());
-        $this->assertEquals('gz', $this->client()->getRegion());
+        $config = $this->client()->getConfig();
+
+        $this->assertTrue(is_array($config));
+        $this->assertTrue(array_key_exists('access_key', $config));
+        $this->assertTrue(array_key_exists('secret_key', $config));
+        $this->assertTrue(array_key_exists('bucket', $config));
+        $this->assertTrue(array_key_exists('region', $config));
+    }
+
+    public function testInstance()
+    {
+        $this->expectException(\Sulao\BaiduBos\Exception::class);
+        new \Sulao\BaiduBos\Client([
+            'access_key' => getenv('BOS_KEY'),
+            //'secret_key' => getenv('BOS_SECRET'),
+            'bucket' => 'xinningsu',
+            'region' => 'gz',
+            'options' => ['connect_timeout' => 10]
+        ]);
     }
 
     public function testBucket()
