@@ -25,12 +25,13 @@ composer require xinningsu/baidu-bos
 require 'vendor/autoload.php';
 
 // 实例化
-$client = new \Sulao\BaiduBos\Client(
-    'access_key',
-    'secret_key',
-    'bucket',
-    'region'
-);
+$client = new \Sulao\BaiduBos\Client([
+    'access_key' => 'access key',
+    'secret_key' => 'secret key',
+    'bucket' => 'bucket',
+    'region' => 'region',
+    'options' => ['connect_timeout' => 10] // guzzle request options
+]);
 
 // 添加或更新对象
 $client->putObject('/object_name.txt', 'contents');
