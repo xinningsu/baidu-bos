@@ -70,6 +70,11 @@ $client->deleteObject('/object_name.txt');
 $client->deleteObjects(['/object_name.txt', '/object_name2.txt']);
 ```
 
+# 整合
+
+- [Flysystem Baidu BOS](https://github.com/xinningsu/flysystem-baidu-bos)
+- [Larvel Filesystem Baidu BOS](https://github.com/xinningsu/laravel-filesystem-baidu-bos)
+
 # 参考
 
 - [https://cloud.baidu.com/doc/BOS/index.html](https://cloud.baidu.com/doc/BOS/index.html)

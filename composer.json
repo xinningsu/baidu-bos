@@ -1,6 +1,16 @@
 {
     "name": "xinningsu/baidu-bos",
     "description": "Baidu BOS client 百度对象存储API的基本调用",
+    "keywords": [
+        "baidu",
+        "bos",
+        "baidu bos",
+        "baidu object storage",
+        "百度",
+        "对象存储",
+        "百度对象存储"
+    ],
+    "homepage": "https://github.com/xinningsu/baidu-bos",
     "license": "MIT",
     "authors": [
         {
