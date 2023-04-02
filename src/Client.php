@@ -180,7 +180,7 @@ class Client extends Request
      */
     public function getObjectAcl($path, array $options = [])
     {
-        $options['query'] = ['acl' => null];
+        $options['query'] = ['acl' => ''];
         $options += ['return' => 'body-json'];
 
         return $this->request('GET', $path, $options);
@@ -205,7 +205,7 @@ class Client extends Request
         }
 
         $options['headers']['x-bce-acl'] = $acl;
-        $options['query']['acl'] = null;
+        $options['query']['acl'] = '';
         $options += ['return' => 'headers'];
 
         return $this->request('PUT', $path, $options);
@@ -222,7 +222,7 @@ class Client extends Request
      */
     public function deleteObjectAcl($path, array $options = [])
     {
-        $options['query']['acl'] = null;
+        $options['query']['acl'] = '';
         $options += ['return' => 'headers'];
 
         return $this->request('DELETE', $path, $options);
@@ -238,7 +238,7 @@ class Client extends Request
      */
     public function getBucketAcl(array $options = [])
     {
-        $options['query']['acl'] = null;
+        $options['query']['acl'] = '';
         $options += ['return' => 'body-json'];
 
         return $this->request('GET', '/', $options);
