@@ -153,7 +153,7 @@ class Authorizer
     protected function getCanonicalQueryString(array $query)
     {
         $arr = array_map(function ($value, $key) {
-            return rawurlencode($key) . '=' . rawurlencode($value);
+            return rawurlencode((string)$key) . '=' . rawurlencode((string)$value);
         }, $query, array_keys($query));
         sort($arr);
 
